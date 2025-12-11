@@ -339,7 +339,7 @@ class Database:
 
             if user_word:
                 # Удаляем связь (мягкое удаление)
-                session.delete(user_word)
+                user_word.deleted = True
                 session.commit()
                 return True, "Слово удалено"
             else:
