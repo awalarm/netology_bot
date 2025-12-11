@@ -1,5 +1,14 @@
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, false, true
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    Boolean,
+    false,
+    true,
+)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
@@ -7,7 +16,7 @@ Base = declarative_base()
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
     telegram_id = Column(Integer, unique=True, nullable=False)
@@ -17,7 +26,9 @@ class User(Base):
     created_at = Column(String, default=lambda: datetime.now().isoformat())
 
     # Связи
-    user_words = relationship("UserWord", back_populates="user", cascade="all, delete-orphan")
+    user_words = relationship(
+        "UserWord", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @hybrid_property
     def total_words(self):
@@ -25,12 +36,14 @@ class User(Base):
 
 
 class Word(Base):
-    __tablename__ = 'words'
+    __tablename__ = "words"
 
     id = Column(Integer, primary_key=True)
     english = Column(String(100), nullable=False)
     russian = Column(String(100), nullable=False)
-    is_default = Column(Boolean, default=False)  # слова по умолчанию для всех пользователей
+    is_default = Column(
+        Boolean, default=False
+    )  # слова по умолчанию для всех пользователей
 
     # Связи
     user_words = relationship("UserWord", back_populates="word")
@@ -38,11 +51,11 @@ class Word(Base):
 
 # Связь пользователь-слово (многие-ко-многим с дополнительными полями)
 class UserWord(Base):
-    __tablename__ = 'user_words'
+    __tablename__ = "user_words"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    word_id = Column(Integer, ForeignKey('words.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     deleted = Column(Boolean, default=False)
     added_at = Column(String, default=lambda: datetime.now().isoformat())
 
@@ -92,7 +105,7 @@ class Database:
                     word = Word(
                         english=word_data["english"],
                         russian=word_data["russian"],
-                        is_default=True
+                        is_default=True,
                     )
                     session.add(word)
                 session.commit()
@@ -106,7 +119,9 @@ class Database:
         finally:
             session.close()
 
-    def get_or_create_user(self, telegram_id, username=None, first_name=None, last_name=None):
+    def get_or_create_user(
+        self, telegram_id, username=None, first_name=None, last_name=None
+    ):
         """Получение или создание пользователя"""
         session = self.Session()
         try:
@@ -116,7 +131,7 @@ class Database:
                     telegram_id=telegram_id,
                     username=username,
                     first_name=first_name,
-                    last_name=last_name
+                    last_name=last_name,
                 )
                 session.add(user)
                 session.commit()
@@ -138,11 +153,7 @@ class Database:
 
             # Добавляем их пользователю
             for word in default_words:
-                user_word = UserWord(
-                    user_id=user_id,
-                    word_id=word.id,
-                    deleted=False
-                )
+                user_word = UserWord(user_id=user_id, word_id=word.id, deleted=False)
                 session.add(user_word)
 
             session.commit()
@@ -153,8 +164,8 @@ class Database:
         """Получение слов пользователя"""
         session = self.Session()
         try:
-            query = session.query(Word).join(UserWord).filter(
-                UserWord.user_id == user_id
+            query = (
+                session.query(Word).join(UserWord).filter(UserWord.user_id == user_id)
             )
 
             if not include_deleted:
@@ -172,9 +183,10 @@ class Database:
         """Получение только дефолтных слов пользователя"""
         session = self.Session()
         try:
-            query = session.query(Word).join(UserWord).filter(
-                UserWord.user_id == user_id,
-                Word.is_default == true()
+            query = (
+                session.query(Word)
+                .join(UserWord)
+                .filter(UserWord.user_id == user_id, Word.is_default == true())
             )
 
             if not include_deleted:
@@ -188,8 +200,8 @@ class Database:
         """Получение всех слов пользователя (включая дефолтные)"""
         session = self.Session()
         try:
-            query = session.query(Word).join(UserWord).filter(
-                UserWord.user_id == user_id
+            query = (
+                session.query(Word).join(UserWord).filter(UserWord.user_id == user_id)
             )
 
             if not include_deleted:
@@ -204,10 +216,12 @@ class Database:
         session = self.Session()
         try:
             # Получаем активные слова пользователя
-            user_words = session.query(Word).join(UserWord).filter(
-                UserWord.user_id == user_id,
-                UserWord.deleted == false()
-            ).all()
+            user_words = (
+                session.query(Word)
+                .join(UserWord)
+                .filter(UserWord.user_id == user_id, UserWord.deleted == false())
+                .all()
+            )
 
             if len(user_words) < count:
                 # Если у пользователя недостаточно слов, добавляем слова по умолчанию
@@ -215,6 +229,7 @@ class Database:
 
             # Выбираем случайное слово как правильный ответ
             import random
+
             target_word = random.choice(user_words)
 
             # Выбираем другие слова как неправильные варианты
@@ -223,11 +238,17 @@ class Database:
                 other_words = random.sample(other_words, count - 1)
             else:
                 # Если не хватает слов, дополняем словами по умолчанию
-                default_words = session.query(Word).filter(
-                    Word.is_default == true(),
-                    Word.id.notin_([w.id for w in user_words])
-                ).all()
-                other_words.extend(random.sample(default_words, count - 1 - len(other_words)))
+                default_words = (
+                    session.query(Word)
+                    .filter(
+                        Word.is_default == true(),
+                        Word.id.notin_([w.id for w in user_words]),
+                    )
+                    .all()
+                )
+                other_words.extend(
+                    random.sample(default_words, count - 1 - len(other_words))
+                )
 
             # Собираем все варианты ответов
             all_words = [target_word] + other_words
@@ -271,48 +292,56 @@ class Database:
             russian_lower = russian.lower().strip()
 
             # Проверяем, существует ли уже такое слово
-            word = session.query(Word).filter_by(
-                english=english_lower,
-                russian=russian_lower
-            ).first()
+            word = (
+                session.query(Word)
+                .filter_by(english=english_lower, russian=russian_lower)
+                .first()
+            )
 
             if not word:
                 # Создаем новое слово
                 word = Word(
-                    english=english_lower,
-                    russian=russian_lower,
-                    is_default=False
+                    english=english_lower, russian=russian_lower, is_default=False
                 )
                 session.add(word)
                 session.flush()  # Получаем ID без коммита
 
             # Проверяем, не добавлено ли уже это слово пользователю
-            existing_user_word = session.query(UserWord).filter_by(
-                user_id=user_id,
-                word_id=word.id
-            ).first()
+            existing_user_word = (
+                session.query(UserWord)
+                .filter_by(user_id=user_id, word_id=word.id)
+                .first()
+            )
 
             if existing_user_word:
                 if existing_user_word.deleted:
                     # Если слово было удалено, восстанавливаем его
                     existing_user_word.deleted = False
                     session.commit()
-                    return word.english, word.russian, False  # False - слово восстановлено
+                    return (
+                        word.english,
+                        word.russian,
+                        False,
+                    )  # False - слово восстановлено
                 else:
-                    return word.english, word.russian, None  # None - слово уже существует
+                    return (
+                        word.english,
+                        word.russian,
+                        None,
+                    )  # None - слово уже существует
 
             # Добавляем слово пользователю
-            user_word = UserWord(
-                user_id=user_id,
-                word_id=word.id,
-                deleted=False
-            )
+            user_word = UserWord(user_id=user_id, word_id=word.id, deleted=False)
             session.add(user_word)
             session.commit()
 
             # Перезагружаем слово из БД чтобы получить актуальные данные
             word_refreshed = session.query(Word).filter_by(id=word.id).first()
-            return word_refreshed.english, word_refreshed.russian, True  # True - слово добавлено
+            return (
+                word_refreshed.english,
+                word_refreshed.russian,
+                True,
+            )  # True - слово добавлено
 
         except Exception as e:
             session.rollback()
@@ -332,10 +361,11 @@ class Database:
                 return False, "Нельзя удалять слова по умолчанию"
 
             # Находим связь пользователя с этим словом
-            user_word = session.query(UserWord).filter_by(
-                user_id=user_id,
-                word_id=word_id
-            ).first()
+            user_word = (
+                session.query(UserWord)
+                .filter_by(user_id=user_id, word_id=word_id)
+                .first()
+            )
 
             if user_word:
                 # Удаляем связь (мягкое удаление)
@@ -363,11 +393,16 @@ class Database:
         """Получение только пользовательских слов (не дефолтных)"""
         session = self.Session()
         try:
-            words = session.query(Word).join(UserWord).filter(
-                UserWord.user_id == user_id,
-                Word.is_default == false(),
-                UserWord.deleted == false()
-            ).all()
+            words = (
+                session.query(Word)
+                .join(UserWord)
+                .filter(
+                    UserWord.user_id == user_id,
+                    Word.is_default == false(),
+                    UserWord.deleted == false(),
+                )
+                .all()
+            )
             return words
         finally:
             session.close()

@@ -8,8 +8,8 @@ load_dotenv()
 
 # Создание базы данных если она не существует
 def create_database():
-    db_url = os.getenv('DATABASE_URL')
-    db_name = 'english_bot_db'
+    db_url = os.getenv("DATABASE_URL")
+    db_name = "english_bot_db"
 
     # Подключаемся к postgres для создания БД
     engine = create_engine(db_url)
@@ -17,7 +17,9 @@ def create_database():
     conn.execute(text("COMMIT"))
 
     # Проверяем, существует ли БД
-    result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'"))
+    result = conn.execute(
+        text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+    )
 
     if not result.fetchone():
         print(f"Создаем базу данных '{db_name}'...")
@@ -29,5 +31,5 @@ def create_database():
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     create_database()

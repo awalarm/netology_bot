@@ -7,8 +7,8 @@ from telebot.storage import StateMemoryStorage
 import database
 
 load_dotenv()
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-DB_URL = os.getenv('DATABASE_URL')
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+DB_URL = os.getenv("DATABASE_URL")
 
 state_storage = StateMemoryStorage()
 bot = TeleBot(TOKEN, state_storage=state_storage)
@@ -23,18 +23,19 @@ class MyStates(StatesGroup):
 
 
 class Command:
-    ADD_WORD = '➕ Добавить слово'
-    DELETE_WORD = '🔙 Удалить слово'
-    NEXT = '⏭ Дальше'
-    MY_WORDS = '📚 Мои слова'
-    HELP = '❓ Помощь'
+    ADD_WORD = "➕ Добавить слово"
+    DELETE_WORD = "🔙 Удалить слово"
+    NEXT = "⏭ Дальше"
+    MY_WORDS = "📚 Мои слова"
+    HELP = "❓ Помощь"
 
 
 WELCOME_MESSAGE = """Привет 👋
 
 Давай попрактикуемся в английском языке. Тренировки можешь проходить в удобном для себя темпе. 
 
-У тебя есть возможность использовать тренажёр, как конструктор, и собирать свою собственную базу для обучения. Для этого воспользуйся инструментами:
+У тебя есть возможность использовать тренажёр, как конструктор, и собирать свою собственную базу для обучения.
+ Для этого воспользуйся инструментами:
 - добавить слово ➕,
 - удалить слово 🔙,
 - мои слова 📚.
@@ -42,7 +43,7 @@ WELCOME_MESSAGE = """Привет 👋
 Ну что, начнём ⬇️"""
 
 
-@bot.message_handler(commands=['start', 'cards'])
+@bot.message_handler(commands=["start", "cards"])
 def handle_start(message):
     """Начало работы с ботом"""
     cid = message.chat.id
@@ -50,16 +51,16 @@ def handle_start(message):
         telegram_id=cid,
         username=message.from_user.username,
         first_name=message.from_user.first_name,
-        last_name=message.from_user.last_name
+        last_name=message.from_user.last_name,
     )
 
-    if message.text == '/start':
-        bot.send_message(cid, WELCOME_MESSAGE, parse_mode='HTML')
+    if message.text == "/start":
+        bot.send_message(cid, WELCOME_MESSAGE, parse_mode="HTML")
 
     create_cards(message, user.id)
 
 
-@bot.message_handler(commands=['help'])
+@bot.message_handler(commands=["help"])
 def handle_help(message):
     """Помощь по боту"""
     help_text = """🤖 *Команды бота:*
@@ -75,10 +76,10 @@ def handle_help(message):
 🔙 Удалить слово - Удалить ваше слово
 📚 Мои слова - Показать все слова
 ❓ Помощь - Справка"""
-    bot.send_message(message.chat.id, help_text, parse_mode='Markdown')
+    bot.send_message(message.chat.id, help_text, parse_mode="Markdown")
 
 
-@bot.message_handler(commands=['mywords'])
+@bot.message_handler(commands=["mywords"])
 def handle_mywords(message):
     """Показать слова пользователя"""
     cid = message.chat.id
@@ -88,7 +89,10 @@ def handle_mywords(message):
     all_words = db.get_all_user_words(user.id)
 
     if not all_words:
-        bot.send_message(cid, "У вас пока нет слов. Добавьте слова с помощью кнопки '➕ Добавить слово'.")
+        bot.send_message(
+            cid,
+            "У вас пока нет слов. Добавьте слова с помощью кнопки '➕ Добавить слово'.",
+        )
         return
 
     # Дефолтные слова
@@ -113,7 +117,7 @@ def handle_mywords(message):
         if len(custom_words) > 10:
             text += f"... и ещё {len(custom_words) - 10}"
 
-    bot.send_message(cid, text, parse_mode='Markdown')
+    bot.send_message(cid, text, parse_mode="Markdown")
 
 
 def create_cards(message, user_id=None):
@@ -139,24 +143,24 @@ def create_cards(message, user_id=None):
         types.KeyboardButton(Command.ADD_WORD),
         types.KeyboardButton(Command.DELETE_WORD),
         types.KeyboardButton(Command.MY_WORDS),
-        types.KeyboardButton(Command.HELP)
+        types.KeyboardButton(Command.HELP),
     ]
 
     # Добавление кнопок
     for i in range(0, len(answer_buttons), 2):
-        markup.add(*answer_buttons[i:i + 2])
+        markup.add(*answer_buttons[i : i + 2])
 
     for i in range(0, len(service_buttons), 2):
-        markup.add(*service_buttons[i:i + 2])
+        markup.add(*service_buttons[i : i + 2])
 
     question = f"🇷🇺 *{target_word.russian}*\n\nВыбери перевод:"
-    bot.send_message(cid, question, reply_markup=markup, parse_mode='Markdown')
+    bot.send_message(cid, question, reply_markup=markup, parse_mode="Markdown")
 
     bot.set_state(message.from_user.id, MyStates.target_word, cid)
     with bot.retrieve_data(message.from_user.id, cid) as data:
-        data['target_word'] = target_word
-        data['all_words'] = all_words
-        data['user_id'] = user_id
+        data["target_word"] = target_word
+        data["all_words"] = all_words
+        data["user_id"] = user_id
 
 
 @bot.message_handler(func=lambda m: m.text == Command.NEXT)
@@ -185,12 +189,16 @@ def delete_word_start(message):
     words = db.get_user_words(user.id)  # Только пользовательские слова
 
     if not words:
-        bot.send_message(cid,
-                         "У вас нет слов для удаления.\n\nВы можете удалять только слова, которые вы сами добавили.")
+        bot.send_message(
+            cid,
+            "У вас нет слов для удаления.\n\nВы можете удалять только слова, которые вы сами добавили.",
+        )
         return
 
     markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    word_buttons = [types.KeyboardButton(f"{w.english} - {w.russian}") for w in words[:12]]
+    word_buttons = [
+        types.KeyboardButton(f"{w.english} - {w.russian}") for w in words[:12]
+    ]
     markup.add(*word_buttons)
     markup.add(types.KeyboardButton("❌ Отмена"))
 
@@ -198,7 +206,9 @@ def delete_word_start(message):
     bot.set_state(message.from_user.id, MyStates.waiting_for_word_to_delete, cid)
 
     with bot.retrieve_data(message.from_user.id, cid) as data:
-        data['words_to_delete'] = {f"{w.english} - {w.russian}": w.id for w in words[:12]}
+        data["words_to_delete"] = {
+            f"{w.english} - {w.russian}": w.id for w in words[:12]
+        }
 
 
 @bot.message_handler(func=lambda m: m.text == Command.MY_WORDS)
@@ -226,13 +236,16 @@ def get_english_word(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("❌ Отмена"))
 
-    bot.send_message(message.chat.id,
-                     f"Английское: *{message.text}*\n\nТеперь введите перевод:",
-                     parse_mode='Markdown', reply_markup=markup)
+    bot.send_message(
+        message.chat.id,
+        f"Английское: *{message.text}*\n\nТеперь введите перевод:",
+        parse_mode="Markdown",
+        reply_markup=markup,
+    )
 
     bot.set_state(message.from_user.id, MyStates.waiting_for_russian, message.chat.id)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['new_english'] = message.text.strip()
+        data["new_english"] = message.text.strip()
 
 
 @bot.message_handler(state=MyStates.waiting_for_russian)
@@ -247,21 +260,25 @@ def get_russian_translation(message):
     cid = message.chat.id
 
     with bot.retrieve_data(message.from_user.id, cid) as data:
-        english = data['new_english']
+        english = data["new_english"]
         russian = message.text.strip()
         user = db.get_or_create_user(telegram_id=cid)
 
         try:
-            english_word, russian_word, result = db.add_word_to_user(user.id, english, russian)
+            english_word, russian_word, result = db.add_word_to_user(
+                user.id, english, russian
+            )
 
             if result is True:
                 response = f"✅ *Слово добавлено!*\n\n{english_word} - {russian_word}"
             elif result is False:
-                response = f"✅ *Слово восстановлено!*\n\n{english_word} - {russian_word}"
+                response = (
+                    f"✅ *Слово восстановлено!*\n\n{english_word} - {russian_word}"
+                )
             else:
                 response = f"ℹ️ *Слово уже есть:*\n\n{english_word} - {russian_word}"
 
-            bot.send_message(cid, response, parse_mode='Markdown')
+            bot.send_message(cid, response, parse_mode="Markdown")
 
         except Exception as e:
             bot.send_message(cid, f"❌ Ошибка: {str(e)}")
@@ -283,7 +300,7 @@ def delete_selected_word(message):
     cid = message.chat.id
 
     with bot.retrieve_data(message.from_user.id, cid) as data:
-        words_map = data.get('words_to_delete', {})
+        words_map = data.get("words_to_delete", {})
 
         if message.text in words_map:
             word_id = words_map[message.text]
@@ -311,24 +328,31 @@ def handle_test_answer(message):
     uid = message.from_user.id
 
     current_state = bot.get_state(uid, cid)
-    if current_state in [MyStates.waiting_for_english,
-                         MyStates.waiting_for_russian,
-                         MyStates.waiting_for_word_to_delete]:
+    if current_state in [
+        MyStates.waiting_for_english,
+        MyStates.waiting_for_russian,
+        MyStates.waiting_for_word_to_delete,
+    ]:
         return
 
-    if message.text in [Command.NEXT, Command.ADD_WORD, Command.DELETE_WORD,
-                        Command.MY_WORDS, Command.HELP]:
+    if message.text in [
+        Command.NEXT,
+        Command.ADD_WORD,
+        Command.DELETE_WORD,
+        Command.MY_WORDS,
+        Command.HELP,
+    ]:
         return
 
     try:
         with bot.retrieve_data(uid, cid) as data:
-            if not data or 'target_word' not in data:
+            if not data or "target_word" not in data:
                 user = db.get_or_create_user(telegram_id=cid)
                 create_cards(message, user.id)
                 return
 
-            target_word = data['target_word']
-            all_words = data.get('all_words', [])
+            target_word = data["target_word"]
+            all_words = data.get("all_words", [])
 
             # Проверяем ответ
             user_answer = message.text.strip()
@@ -338,14 +362,16 @@ def handle_test_answer(message):
             markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
 
             if is_correct:
-                response = f"✅ *Правильно!*\n\n{target_word.english} - {target_word.russian}"
+                response = (
+                    f"✅ *Правильно!*\n\n{target_word.english} - {target_word.russian}"
+                )
 
                 buttons = [
                     types.KeyboardButton(Command.NEXT),
                     types.KeyboardButton(Command.ADD_WORD),
                     types.KeyboardButton(Command.DELETE_WORD),
                     types.KeyboardButton(Command.MY_WORDS),
-                    types.KeyboardButton(Command.HELP)
+                    types.KeyboardButton(Command.HELP),
                 ]
                 markup.add(*buttons)
 
@@ -364,16 +390,16 @@ def handle_test_answer(message):
                     types.KeyboardButton(Command.ADD_WORD),
                     types.KeyboardButton(Command.DELETE_WORD),
                     types.KeyboardButton(Command.MY_WORDS),
-                    types.KeyboardButton(Command.HELP)
+                    types.KeyboardButton(Command.HELP),
                 ]
 
                 for i in range(0, len(answer_buttons), 2):
-                    markup.add(*answer_buttons[i:i + 2])
+                    markup.add(*answer_buttons[i : i + 2])
 
                 for i in range(0, len(service_buttons), 2):
-                    markup.add(*service_buttons[i:i + 2])
+                    markup.add(*service_buttons[i : i + 2])
 
-            bot.send_message(cid, response, reply_markup=markup, parse_mode='Markdown')
+            bot.send_message(cid, response, reply_markup=markup, parse_mode="Markdown")
 
             if is_correct:
                 bot.delete_state(uid, cid)
@@ -383,7 +409,7 @@ def handle_test_answer(message):
         create_cards(message, user.id)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     db.create_tables()
     db.init_default_words()
     bot.add_custom_filter(custom_filters.StateFilter(bot))
