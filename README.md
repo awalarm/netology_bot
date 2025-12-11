@@ -29,3 +29,31 @@ python setup_db.py
 
 # Или вручную через psql
 CREATE DATABASE english_bot_db;
+
+erDiagram
+    USERS ||--o{ USER_WORDS : has
+    WORDS ||--o{ USER_WORDS : referenced_in
+
+    USERS {
+        integer id PK "user_id"
+        integer telegram_id UK "NOT NULL"
+        varchar(100) username
+        varchar(100) first_name
+        varchar(100) last_name
+        varchar created_at
+    }
+
+    WORDS {
+        integer id PK "word_id"
+        varchar(100) english "NOT NULL"
+        varchar(100) russian "NOT NULL"
+        boolean is_default "is_common"
+    }
+
+    USER_WORDS {
+        integer id PK
+        integer user_id FK "NOT NULL"
+        integer word_id FK "NOT NULL"
+        boolean deleted "is_active"
+        varchar added_at
+    }
